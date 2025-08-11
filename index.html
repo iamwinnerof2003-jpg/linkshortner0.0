@@ -1,0 +1,596 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>QuickDrop — Enhanced Download System</title>
+  <style>
+    :root{
+      --bg:#0f1724;
+      --card:#0b1220;
+      --accent:#06b6d4;
+      --success:#10b981;
+      --warning:#f59e0b;
+      --muted:#9ca3af;
+      --glass:rgba(255,255,255,0.03);
+      --border:rgba(255,255,255,0.08);
+    }
+    
+    *{box-sizing:border-box}
+    
+    body{
+      margin:0;
+      font-family:Inter,ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;
+      background:linear-gradient(180deg,#071327 0%, #091829 100%);
+      color:#e6eef6;
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+    }
+    
+    .wrap{width:100%;max-width:1100px}
+    
+    header{
+      display:flex;
+      align-items:center;
+      gap:16px;
+      margin-bottom:24px;
+    }
+    
+    .logo{
+      width:60px;
+      height:60px;
+      border-radius:16px;
+      background:linear-gradient(135deg,var(--accent),#7c3aed);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:700;
+      font-size:20px;
+      box-shadow:0 8px 32px rgba(6,182,212,0.3);
+    }
+    
+    h1{margin:0;font-size:24px;font-weight:700}
+    p.lead{margin:4px 0 0;color:var(--muted);font-size:15px}
+
+    .grid{display:grid;grid-template-columns:1fr 380px;gap:24px}
+    .card{
+      background:var(--card);
+      padding:24px;
+      border-radius:16px;
+      box-shadow:0 8px 40px rgba(2,6,23,0.6);
+      border:1px solid var(--border);
+    }
+
+    .big-action{display:flex;flex-direction:column;gap:16px}
+    .offers{display:flex;flex-direction:column;gap:12px}
+    
+    .offer-row{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      padding:16px;
+      border-radius:12px;
+      background:var(--glass);
+      border:2px solid transparent;
+      cursor:pointer;
+      transition:all 0.3s ease;
+      position:relative;
+      overflow:hidden;
+    }
+    
+    .offer-row::before{
+      content:'';
+      position:absolute;
+      top:0;left:0;right:0;bottom:0;
+      background:linear-gradient(135deg,rgba(6,182,212,0.1),rgba(124,58,237,0.1));
+      opacity:0;
+      transition:opacity 0.3s ease;
+    }
+    
+    .offer-row:hover{
+      border-color:var(--border);
+      transform:translateY(-2px);
+    }
+    
+    .offer-row:hover::before{opacity:1}
+    
+    .offer-row.selected{
+      border-color:var(--accent);
+      background:rgba(6,182,212,0.1);
+    }
+    
+    .offer-icon{
+      width:48px;
+      height:48px;
+      border-radius:10px;
+      background:linear-gradient(135deg,var(--accent),#7c3aed);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:700;
+      font-size:18px;
+      flex-shrink:0;
+    }
+    
+    .offer-content{flex:1;position:relative;z-index:1}
+    .offer-title{font-weight:600;font-size:16px;margin-bottom:4px}
+    .offer-subtitle{font-size:13px;color:var(--muted)}
+    
+    .btn{
+      background:linear-gradient(90deg,var(--accent),#7c3aed);
+      border:none;
+      padding:16px 24px;
+      border-radius:12px;
+      color:#04111a;
+      font-weight:700;
+      cursor:pointer;
+      font-size:16px;
+      transition:all 0.3s ease;
+      box-shadow:0 4px 20px rgba(6,182,212,0.3);
+    }
+    
+    .btn:hover{
+      transform:translateY(-2px);
+      box-shadow:0 8px 30px rgba(6,182,212,0.4);
+    }
+    
+    .btn:active{transform:translateY(0px)}
+    
+    .btn:disabled{
+      opacity:0.5;
+      cursor:not-allowed;
+      transform:none;
+    }
+
+    .controls{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    .small{font-size:13px;color:var(--muted)}
+    .meta{
+      font-size:13px;
+      color:var(--muted);
+      margin-top:12px;
+      padding:12px;
+      background:rgba(255,255,255,0.02);
+      border-radius:8px;
+      border-left:3px solid var(--accent);
+    }
+
+    .preview{display:flex;flex-direction:column;gap:16px}
+    .panel{
+      background:linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+      padding:16px;
+      border-radius:12px;
+      border:1px solid var(--border);
+    }
+
+    .progress{
+      height:16px;
+      background:rgba(255,255,255,0.06);
+      border-radius:999px;
+      overflow:hidden;
+      position:relative;
+    }
+    
+    .progress > i{
+      display:block;
+      height:100%;
+      width:0%;
+      background:linear-gradient(90deg,var(--accent),#7c3aed);
+      transition:width 400ms cubic-bezier(0.4, 0, 0.2, 1);
+      position:relative;
+    }
+    
+    .progress > i::after{
+      content:'';
+      position:absolute;
+      top:0;right:0;bottom:0;
+      width:20px;
+      background:linear-gradient(90deg,transparent,rgba(255,255,255,0.3));
+      animation:shimmer 2s infinite;
+    }
+    
+    @keyframes shimmer{
+      0%{opacity:0}
+      50%{opacity:1}
+      100%{opacity:0}
+    }
+
+    .status-area{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      padding:16px;
+      border-radius:12px;
+      background:rgba(255,255,255,0.03);
+    }
+    
+    .status-icon{
+      width:24px;
+      height:24px;
+      border-radius:50%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      flex-shrink:0;
+    }
+    
+    .status-icon.loading{
+      background:var(--accent);
+      animation:pulse 2s infinite;
+    }
+    
+    .status-icon.success{background:var(--success)}
+    .status-icon.warning{background:var(--warning)}
+    
+    @keyframes pulse{
+      0%{opacity:1;transform:scale(1)}
+      50%{opacity:0.7;transform:scale(1.1)}
+      100%{opacity:1;transform:scale(1)}
+    }
+
+    label{display:block;font-size:13px;margin-bottom:8px;color:var(--muted);font-weight:500}
+    input[type=text]{
+      width:100%;
+      padding:12px;
+      border-radius:8px;
+      border:1px solid var(--border);
+      background:rgba(255,255,255,0.02);
+      color:inherit;
+      font-size:14px;
+      transition:border-color 0.3s ease;
+    }
+    
+    input[type=text]:focus{
+      outline:none;
+      border-color:var(--accent);
+      box-shadow:0 0 0 3px rgba(6,182,212,0.1);
+    }
+
+    .stats{
+      display:grid;
+      grid-template-columns:repeat(2,1fr);
+      gap:12px;
+      margin-bottom:16px;
+    }
+    
+    .stat-item{
+      text-align:center;
+      padding:12px;
+      background:rgba(255,255,255,0.02);
+      border-radius:8px;
+      border:1px solid var(--border);
+    }
+    
+    .stat-number{font-size:18px;font-weight:700;color:var(--accent)}
+    .stat-label{font-size:11px;color:var(--muted);margin-top:2px}
+
+    footer{margin-top:16px;color:var(--muted);font-size:13px;line-height:1.5}
+
+    @media (max-width:920px){
+      .grid{grid-template-columns:1fr;}
+      .logo{width:52px;height:52px;font-size:18px}
+      .card{padding:18px}
+      h1{font-size:20px}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="logo">QD</div>
+      <div>
+        <h1>QuickDrop — Enhanced Download System</h1>
+        <p class="lead">Professional download management with improved user experience and analytics.</p>
+      </div>
+    </header>
+
+    <div class="grid">
+      <div class="card">
+        <div class="big-action">
+          <div class="offers" id="offersList">
+            <!-- offers injected by JS -->
+          </div>
+
+          <div class="controls">
+            <button class="btn" id="getBtn">Start Download</button>
+            <div class="small">✨ Optimized for better conversion rates</div>
+          </div>
+
+          <div class="meta">
+            <strong>How it works:</strong> Click starts an ad in a new tab while preparing your download. The system is designed to be popup-blocker friendly and provides clear user feedback throughout the process.
+          </div>
+        </div>
+
+        <div style="margin-top:24px" class="panel">
+          <div class="preview">
+            <div class="status-area" id="statusArea">
+              <div class="status-icon" id="statusIcon">⚡</div>
+              <div id="status">Select an offer above and click <strong>Start Download</strong> to begin.</div>
+            </div>
+            <div class="progress" aria-hidden="true"><i id="progressBar"></i></div>
+            <div id="actionArea"></div>
+          </div>
+        </div>
+
+      </div>
+
+      <aside class="card">
+        <div class="stats">
+          <div class="stat-item">
+            <div class="stat-number" id="downloadCount">0</div>
+            <div class="stat-label">Downloads Today</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number" id="conversionRate">0%</div>
+            <div class="stat-label">Conversion Rate</div>
+          </div>
+        </div>
+
+        <h3 style="margin-top:0;margin-bottom:16px">Configuration</h3>
+        <p class="small">Edit the <code>OFFERS</code> array in the JavaScript section to customize your offers. Each item needs <code>title</code>, <code>offer_url</code>, and <code>ad_url</code>.</p>
+
+        <label>Selected Offer Details</label>
+        <div class="panel" id="offerPreview">Select an offer to see details</div>
+
+        <div style="margin-top:16px">
+          <label>Manual Testing Links</label>
+          <input type="text" id="manualOffer" placeholder="https://example.com/your-file.zip" />
+          <input type="text" id="manualAd" placeholder="https://ad-network.example/popup?campaign=123" style="margin-top:8px" />
+          <button class="btn" id="manualBtn" style="margin-top:12px;font-size:14px;padding:12px 16px">Test Manual Links</button>
+        </div>
+
+        <footer>
+          <div><strong>Deployment:</strong> Host on Netlify, Vercel, or any static hosting. For custom domains, consider server-side redirects for better SEO and analytics.</div>
+          
+          <div style="margin-top:12px"><strong>Optimization tips:</strong> Test different delay timings, A/B test offer presentations, and monitor conversion rates to improve performance.</div>
+        </footer>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    /************************************************************************
+     * CONFIGURATION: Edit offers below
+     ************************************************************************/
+
+    const OFFERS = [
+      { 
+        id: 'o1', 
+        title: 'AI Resume Builder Pro', 
+        subtitle: 'Professional templates + ATS optimization',
+        icon: '📄',
+        offer_url: 'https://example.com/files/ai-resume-pro.zip', 
+        ad_url: 'https://www.profitableratecpm.com/pwrsbgesr?key=6c0d8425b26286a2f4fa5b914d286ab6' 
+      },
+      { 
+        id: 'o2', 
+        title: 'Background Remover Tool', 
+        subtitle: 'Instant PNG background removal',
+        icon: '🖼️',
+        offer_url: 'https://example.com/files/bg-remover-tool.zip', 
+        ad_url: 'https://www.profitableratecpm.com/pwrsbgesr?key=6c0d8425b26286a2f4fa5b914d286ab6' 
+      },
+      { 
+        id: 'o3', 
+        title: 'Social Media Kit 2024', 
+        subtitle: '500+ templates for all platforms',
+        icon: '📱',
+        offer_url: 'https://example.com/files/social-media-kit.zip', 
+        ad_url: 'https://www.profitableratecpm.com/pwrsbgesr?key=6c0d8425b26286a2f4fa5b914d286ab6' 
+      }
+    ];
+
+    // Enhanced system with better UX and analytics
+    const offersList = document.getElementById('offersList');
+    const offerPreview = document.getElementById('offerPreview');
+    const status = document.getElementById('status');
+    const statusIcon = document.getElementById('statusIcon');
+    const statusArea = document.getElementById('statusArea');
+    const progressBar = document.getElementById('progressBar');
+    const actionArea = document.getElementById('actionArea');
+    const downloadCount = document.getElementById('downloadCount');
+    const conversionRate = document.getElementById('conversionRate');
+
+    let selectedOffer = null;
+    let stats = {downloads: 0, attempts: 0};
+
+    // Load stats from memory (you could enhance this with localStorage if needed)
+    function updateStats() {
+      downloadCount.textContent = stats.downloads;
+      const rate = stats.attempts > 0 ? Math.round((stats.downloads / stats.attempts) * 100) : 0;
+      conversionRate.textContent = rate + '%';
+    }
+
+    function renderOffers(){
+      offersList.innerHTML = '';
+      OFFERS.forEach((o,i)=>{
+        const row = document.createElement('div'); 
+        row.className = 'offer-row'; 
+        row.dataset.id = o.id;
+        row.innerHTML = `
+          <div class="offer-icon">${o.icon || '📦'}</div>
+          <div class="offer-content">
+            <div class="offer-title">${escapeHtml(o.title)}</div>
+            <div class="offer-subtitle">${escapeHtml(o.subtitle || '')}</div>
+          </div>
+        `;
+        row.addEventListener('click', ()=>{ selectOffer(o.id); });
+        offersList.appendChild(row);
+        if(i===0) selectOffer(o.id);
+      });
+    }
+
+    function selectOffer(id){
+      selectedOffer = OFFERS.find(x=>x.id===id);
+      
+      // Update preview
+      if(selectedOffer) {
+        offerPreview.innerHTML = `
+          <strong>${selectedOffer.title}</strong><br>
+          <small style="color: var(--muted)">${selectedOffer.subtitle}</small><br><br>
+          <strong>Download URL:</strong><br>
+          <small style="word-break: break-all; color: var(--accent)">${selectedOffer.offer_url}</small><br><br>
+          <strong>Ad URL:</strong><br>
+          <small style="word-break: break-all; color: var(--accent)">${selectedOffer.ad_url}</small>
+        `;
+      } else {
+        offerPreview.textContent = 'Select an offer to see details';
+      }
+      
+      // Update selection UI
+      document.querySelectorAll('.offer-row').forEach(r=>{
+        r.classList.toggle('selected', r.dataset.id === id);
+      });
+    }
+
+    function startFlow(offer){
+      if(!offer) return alert('Please select an offer first');
+
+      stats.attempts++;
+      updateStats();
+
+      // Update UI to loading state
+      statusIcon.className = 'status-icon loading';
+      statusIcon.textContent = '⏳';
+      status.textContent = 'Opening ad and preparing your download...';
+      progressBar.style.width = '10%';
+      actionArea.innerHTML = '<div class="small" style="color: var(--muted)">This process takes just a few seconds</div>';
+
+      // Open ad popup/tab immediately on user click
+      let adWindow = null;
+      let popupBlocked = false;
+      
+      try{
+        adWindow = window.open(offer.ad_url, '_blank', 'noopener,noreferrer');
+        if(!adWindow || adWindow.closed) {
+          popupBlocked = true;
+        }
+      } catch(e){
+        console.warn('Popup blocked or failed to open', e);
+        popupBlocked = true;
+      }
+
+      // Animate progress with more realistic timing
+      let pct = 10;
+      const progressInterval = setInterval(()=>{
+        pct += Math.floor(Math.random()*8)+4;
+        if(pct > 88) pct = 88;
+        progressBar.style.width = pct + '%';
+      }, 300);
+
+      // Handle popup blocking
+      setTimeout(()=>{
+        if(popupBlocked || !adWindow || adWindow.closed){
+          actionArea.innerHTML = `
+            <div style="text-align: center; padding: 12px; background: rgba(245,158,11,0.1); border-radius: 8px; border: 1px solid rgba(245,158,11,0.3)">
+              <div class="small" style="color: var(--warning); margin-bottom: 8px">Ad popup was blocked</div>
+              <button id="manualOpen" style="background: var(--warning); border: none; padding: 8px 16px; border-radius: 6px; color: #000; font-size: 12px; cursor: pointer">
+                Click to open ad manually
+              </button>
+            </div>
+          `;
+          document.getElementById('manualOpen').addEventListener('click', ()=>{
+            window.open(offer.ad_url, '_blank', 'noopener,noreferrer');
+            actionArea.innerHTML = '<div class="small" style="color: var(--success)">✓ Ad opened! Download will start shortly...</div>';
+          });
+        }
+      }, 1200);
+
+      // Complete the flow
+      const DELAY_MS = 4200; // Slightly longer for better UX
+      setTimeout(()=>{
+        clearInterval(progressInterval);
+        progressBar.style.width = '100%';
+        
+        statusIcon.className = 'status-icon success';
+        statusIcon.textContent = '✅';
+        status.textContent = 'Download ready! Redirecting now...';
+        
+        stats.downloads++;
+        updateStats();
+
+        // Enhanced download handling
+        const downloadLink = document.createElement('a');
+        downloadLink.href = offer.offer_url;
+        downloadLink.rel = 'noopener noreferrer';
+        downloadLink.target = '_blank';
+        downloadLink.download = '';
+        document.body.appendChild(downloadLink);
+
+        try{ 
+          downloadLink.click(); 
+        } catch(e){ 
+          console.warn('Programmatic click failed', e); 
+        }
+
+        // Fallback redirect with longer delay
+        setTimeout(()=>{
+          window.location.href = offer.offer_url;
+        }, 1000);
+
+        // Reset after successful download
+        setTimeout(()=>{
+          statusIcon.className = 'status-icon';
+          statusIcon.textContent = '⚡';
+          status.textContent = 'Ready for next download!';
+          progressBar.style.width = '0%';
+          actionArea.innerHTML = '';
+        }, 3000);
+
+      }, DELAY_MS);
+    }
+
+    // Helper functions
+    function escapeHtml(s){ 
+      return String(s).replace(/[&<>\"]/g, c=>({
+        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'
+      }[c])); 
+    }
+
+    // Event listeners
+    document.getElementById('getBtn').addEventListener('click', ()=>{
+      if(!selectedOffer){ 
+        alert('Please select an offer first'); 
+        return; 
+      }
+      startFlow(selectedOffer);
+    });
+
+    document.getElementById('manualBtn').addEventListener('click', ()=>{
+      const mo = document.getElementById('manualOffer').value.trim();
+      const ma = document.getElementById('manualAd').value.trim();
+      if(!mo || !ma){ 
+        alert('Please enter both manual offer and ad links'); 
+        return; 
+      }
+      const testOffer = {
+        id:'manual', 
+        title:'Manual Test', 
+        subtitle: 'Testing with custom URLs',
+        icon: '🔧',
+        offer_url: mo, 
+        ad_url: ma
+      };
+      startFlow(testOffer);
+    });
+
+    // Initialize
+    renderOffers();
+    updateStats();
+
+    // Enhanced beforeunload protection
+    window.addEventListener('beforeunload', (e)=>{
+      if(progressBar.style.width && progressBar.style.width !== '0%' && progressBar.style.width !== ''){
+        e.preventDefault(); 
+        e.returnValue = 'Download in progress. Are you sure you want to leave?';
+      }
+    });
+
+    // Simple analytics (could be enhanced with real analytics)
+    console.log('QuickDrop Enhanced System Loaded');
+    
+  </script>
+</body>
+</html>
